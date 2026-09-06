@@ -5,6 +5,7 @@ const STUDENTS_KEY = 'lyceeConnectStudents';
 const CLASSES_KEY = 'lyceeConnectClasses';
 const GRADES_KEY = 'lyceeConnectGrades';
 const ABSENCES_KEY = 'lyceeConnectAbsences';
+const SCHEDULE_KEY = 'lyceeConnectSchedule';
 
 function seedUsers() {
 	const existingUsers = JSON.parse(localStorage.getItem(USERS_KEY) || 'null');
@@ -127,6 +128,27 @@ function saveAbsences(absences) {
 	localStorage.setItem(ABSENCES_KEY, JSON.stringify(absences));
 }
 
+function seedSchedule() {
+	const existingSchedule = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || 'null');
+	if (Array.isArray(existingSchedule)) {
+		return;
+	}
+
+	localStorage.setItem(SCHEDULE_KEY, JSON.stringify([
+		{ id: '1', day: 'Lundi', time: '08:00', subject: 'Mathématiques', className: 'Terminale A' },
+		{ id: '2', day: 'Mardi', time: '10:00', subject: 'Français', className: 'Première C' },
+		{ id: '3', day: 'Jeudi', time: '14:00', subject: 'Histoire', className: 'Seconde B' }
+	]));
+}
+
+function getSchedule() {
+	return JSON.parse(localStorage.getItem(SCHEDULE_KEY) || '[]');
+}
+
+function saveSchedule(schedule) {
+	localStorage.setItem(SCHEDULE_KEY, JSON.stringify(schedule));
+}
+
 function escapeHtml(value) {
 	return String(value).replace(/[&<>'"]/g, (character) => ({
 		'&': '&amp;',
@@ -199,6 +221,7 @@ function renderDashboard(user) {
 					<button id="classes-button" class="secondary-button" type="button">Classes</button>
 					<button id="grades-button" class="secondary-button" type="button">Notes</button>
 					<button id="absences-button" class="secondary-button" type="button">Absences</button>
+					<button id="schedule-button" class="secondary-button" type="button">Emploi du temps</button>
 					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
 				</div>
 			</header>
@@ -247,6 +270,7 @@ function renderDashboard(user) {
 	document.querySelector('#classes-button').addEventListener('click', () => renderClasses(user));
 	document.querySelector('#grades-button').addEventListener('click', () => renderGrades(user));
 	document.querySelector('#absences-button').addEventListener('click', () => renderAbsences(user));
+	document.querySelector('#schedule-button').addEventListener('click', () => renderSchedule(user));
 }
 
 function renderStudents(user) {
@@ -580,11 +604,91 @@ function renderAbsences(user) {
 	renderAbsenceList();
 }
 
+function renderSchedule(user) {
+	const classes = getClasses();
+	const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
+	app.innerHTML = `
+		<section class="dashboard-shell">
+			<header class="topbar">
+				<div>
+					<p class="eyebrow">Organisation pédagogique</p>
+					<h2>Emploi du temps</h2>
+				</div>
+				<div class="topbar-actions">
+					<button id="back-button" class="secondary-button" type="button">Tableau de bord</button>
+					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
+				</div>
+			</header>
+
+			<section class="panel schedule-panel">
+				<div class="section-heading">
+					<div>
+						<h3>Créneaux de la semaine</h3>
+						<p id="schedule-summary"></p>
+					</div>
+				</div>
+				<form id="schedule-form" class="schedule-form">
+					<select id="schedule-day" aria-label="Jour" required>${days.map((day) => `<option value="${day}">${day}</option>`).join('')}</select>
+					<input id="schedule-time" type="time" aria-label="Heure" required>
+					<input id="schedule-subject" type="text" placeholder="Matière" aria-label="Matière" required>
+					<select id="schedule-class" aria-label="Classe" required><option value="">Choisir une classe</option>${classes.map((schoolClass) => `<option value="${escapeHtml(schoolClass.name)}">${escapeHtml(schoolClass.name)}</option>`).join('')}</select>
+					<button type="submit">Ajouter <span aria-hidden="true">+</span></button>
+				</form>
+				<p id="schedule-message" class="form-message" role="status"></p>
+				<div id="schedule-list" class="schedule-list"></div>
+			</section>
+		</section>
+	`;
+
+	const renderScheduleList = () => {
+		const schedule = getSchedule().sort((first, second) => days.indexOf(first.day) - days.indexOf(second.day) || first.time.localeCompare(second.time));
+		document.querySelector('#schedule-summary').textContent = `${schedule.length} créneau${schedule.length > 1 ? 'x' : ''} enregistré${schedule.length > 1 ? 's' : ''}`;
+		document.querySelector('#schedule-list').innerHTML = schedule.length ? schedule.map((slot) => `
+			<article class="schedule-row">
+				<div class="schedule-time"><strong>${escapeHtml(slot.time)}</strong><span>${escapeHtml(slot.day)}</span></div>
+				<div class="schedule-details"><strong>${escapeHtml(slot.subject)}</strong><span>${escapeHtml(slot.className)}</span></div>
+				<button class="delete-schedule" data-id="${escapeHtml(slot.id)}" type="button" aria-label="Supprimer le créneau">Supprimer</button>
+			</article>
+		`).join('') : '<p class="empty-state">Aucun créneau enregistré.</p>';
+		document.querySelectorAll('.delete-schedule').forEach((button) => {
+			button.addEventListener('click', () => {
+				saveSchedule(getSchedule().filter((slot) => slot.id !== button.dataset.id));
+				renderScheduleList();
+			});
+		});
+	};
+
+	document.querySelector('#schedule-form').addEventListener('submit', (event) => {
+		event.preventDefault();
+		const schedule = getSchedule();
+		const day = document.querySelector('#schedule-day').value;
+		const time = document.querySelector('#schedule-time').value;
+		const className = document.querySelector('#schedule-class').value;
+		if (schedule.some((slot) => slot.day === day && slot.time === time && slot.className === className)) {
+			document.querySelector('#schedule-message').textContent = 'Ce créneau existe déjà pour cette classe.';
+			return;
+		}
+		schedule.push({ id: crypto.randomUUID(), day, time, subject: document.querySelector('#schedule-subject').value.trim(), className });
+		saveSchedule(schedule);
+		event.target.reset();
+		document.querySelector('#schedule-message').textContent = 'Créneau ajouté localement.';
+		renderScheduleList();
+	});
+
+	document.querySelector('#back-button').addEventListener('click', () => renderDashboard(user));
+	document.querySelector('#logout-button').addEventListener('click', () => {
+		clearSession();
+		renderLogin();
+	});
+	renderScheduleList();
+}
+
 seedUsers();
 seedStudents();
 seedClasses();
 seedGrades();
 seedAbsences();
+seedSchedule();
 
 const savedSession = getSession();
 if (savedSession) {

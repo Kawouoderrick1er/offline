@@ -196,6 +196,16 @@ button span { float: right; font-size: 1.1rem; }
 .absence-status.is-unjustified { color: #a0443f; }
 .delete-absence { width: auto; margin: 0; padding: 8px 12px; color: #a0443f; background: transparent; border: 1px solid #d9aaa5; font-size: 0.68rem; }
 .delete-absence:hover { color: #fff; background: #a0443f; }
+.schedule-panel { max-width: 1100px; }
+.schedule-form { display: grid; grid-template-columns: 0.8fr 0.7fr 1fr 1fr auto; gap: 12px; max-width: none; margin-bottom: 4px; }
+.schedule-form input, .schedule-form select { width: 100%; margin: 0; padding: 14px; border: 1px solid var(--line); outline: 0; color: var(--ink); background: #fffdf8; font: 0.95rem Georgia, serif; }
+.schedule-form button { width: auto; margin: 0; white-space: nowrap; }
+.schedule-list { margin-top: 18px; border-top: 1px solid var(--line); }
+.schedule-row { display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.schedule-time, .schedule-details { display: grid; gap: 5px; }
+.schedule-row span { color: var(--muted); font: 0.82rem/1.2 Arial, sans-serif; }
+.delete-schedule { width: auto; margin: 0; padding: 8px 12px; color: #a0443f; background: transparent; border: 1px solid #d9aaa5; font-size: 0.68rem; }
+.delete-schedule:hover { color: #fff; background: #a0443f; }
 
 @media (max-width: 800px) {
 	.login-shell { grid-template-columns: 1fr; }
@@ -219,4 +229,7 @@ button span { float: right; font-size: 1.1rem; }
 	.absence-form button { width: 100%; }
 	.check-field { padding: 10px 0; }
 	.absence-row { align-items: flex-start; flex-direction: column; }
+	.schedule-form { grid-template-columns: 1fr; }
+	.schedule-form button { width: 100%; }
+	.schedule-row { grid-template-columns: 1fr; gap: 8px; }
 }
