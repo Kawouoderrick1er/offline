@@ -1,6 +1,7 @@
 const app = document.querySelector('#app');
 const USERS_KEY = 'lyceeConnectUsers';
 const SESSION_KEY = 'lyceeConnectSession';
+const STUDENTS_KEY = 'lyceeConnectStudents';
 
 function seedUsers() {
 	const existingUsers = JSON.parse(localStorage.getItem(USERS_KEY) || 'null');
@@ -36,6 +37,39 @@ function getSession() {
 
 function clearSession() {
 	localStorage.removeItem(SESSION_KEY);
+}
+
+function seedStudents() {
+	const existingStudents = JSON.parse(localStorage.getItem(STUDENTS_KEY) || 'null');
+	if (Array.isArray(existingStudents)) {
+		return;
+	}
+
+	const defaultStudents = [
+		{ id: '1', name: 'Amina Diallo', className: 'Terminale A', status: 'Inscrite' },
+		{ id: '2', name: 'Lucas Martin', className: 'Première C', status: 'Inscrit' },
+		{ id: '3', name: 'Mariam Koné', className: 'Seconde B', status: 'Inscrite' }
+	];
+
+	localStorage.setItem(STUDENTS_KEY, JSON.stringify(defaultStudents));
+}
+
+function getStudents() {
+	return JSON.parse(localStorage.getItem(STUDENTS_KEY) || '[]');
+}
+
+function saveStudents(students) {
+	localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+}
+
+function escapeHtml(value) {
+	return String(value).replace(/[&<>'"]/g, (character) => ({
+		'&': '&amp;',
+		'<': '&lt;',
+		'>': '&gt;',
+		"'": '&#39;',
+		'"': '&quot;'
+	}[character]));
 }
 
 function renderLogin() {
@@ -95,7 +129,10 @@ function renderDashboard(user) {
 					<p class="eyebrow">Tableau de bord</p>
 					<h2>Bienvenue, ${user.id}</h2>
 				</div>
-				<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
+				<div class="topbar-actions">
+					<button id="students-button" class="secondary-button" type="button">Élèves</button>
+					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
+				</div>
 			</header>
 
 			<div class="stat-grid">
@@ -138,9 +175,87 @@ function renderDashboard(user) {
 		clearSession();
 		renderLogin();
 	});
+	document.querySelector('#students-button').addEventListener('click', () => renderStudents(user));
+}
+
+function renderStudents(user) {
+	const students = getStudents();
+	app.innerHTML = `
+		<section class="dashboard-shell">
+			<header class="topbar">
+				<div>
+					<p class="eyebrow">Dossier scolaire</p>
+					<h2>Élèves</h2>
+				</div>
+				<div class="topbar-actions">
+					<button id="back-button" class="secondary-button" type="button">Tableau de bord</button>
+					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
+				</div>
+			</header>
+
+			<section class="panel students-panel">
+				<div class="section-heading">
+					<div>
+						<h3>Liste des élèves</h3>
+						<p id="student-count">${students.length} élève${students.length > 1 ? 's' : ''} enregistré${students.length > 1 ? 's' : ''}</p>
+					</div>
+					<input id="student-search" class="search-input" type="search" placeholder="Rechercher un élève" aria-label="Rechercher un élève">
+				</div>
+				<form id="student-form" class="student-form">
+					<input id="student-name" type="text" placeholder="Nom complet" aria-label="Nom complet" required>
+					<input id="student-class" type="text" placeholder="Classe" aria-label="Classe" required>
+					<button type="submit">Ajouter l'élève <span aria-hidden="true">+</span></button>
+				</form>
+				<p id="student-message" class="form-message" role="status"></p>
+				<div id="student-list" class="student-list"></div>
+			</section>
+		</section>
+	`;
+
+	const renderStudentList = (query = '') => {
+		const normalizedQuery = query.trim().toLowerCase();
+		const filteredStudents = getStudents().filter((student) =>
+			`${student.name} ${student.className}`.toLowerCase().includes(normalizedQuery)
+		);
+		const list = document.querySelector('#student-list');
+		list.innerHTML = filteredStudents.length ? filteredStudents.map((student) => `
+			<article class="student-row">
+				<div><strong>${escapeHtml(student.name)}</strong><span>${escapeHtml(student.className)}</span></div>
+				<div class="student-row-actions"><span class="student-status">${escapeHtml(student.status)}</span><button class="delete-student" data-id="${escapeHtml(student.id)}" type="button" aria-label="Supprimer ${escapeHtml(student.name)}">Supprimer</button></div>
+			</article>
+		`).join('') : '<p class="empty-state">Aucun élève trouvé.</p>';
+		document.querySelector('#student-count').textContent = `${filteredStudents.length} élève${filteredStudents.length > 1 ? 's' : ''} affiché${filteredStudents.length > 1 ? 's' : ''}`;
+		list.querySelectorAll('.delete-student').forEach((button) => {
+			button.addEventListener('click', () => {
+				saveStudents(getStudents().filter((student) => student.id !== button.dataset.id));
+				renderStudentList(document.querySelector('#student-search').value);
+			});
+		});
+	};
+
+	document.querySelector('#student-search').addEventListener('input', (event) => renderStudentList(event.target.value));
+	document.querySelector('#student-form').addEventListener('submit', (event) => {
+		event.preventDefault();
+		const nameInput = document.querySelector('#student-name');
+		const classInput = document.querySelector('#student-class');
+		const students = getStudents();
+		students.push({ id: crypto.randomUUID(), name: nameInput.value.trim(), className: classInput.value.trim(), status: 'Inscrit' });
+		saveStudents(students);
+		event.target.reset();
+		document.querySelector('#student-message').textContent = 'Élève ajouté localement.';
+		renderStudentList();
+	});
+
+	document.querySelector('#back-button').addEventListener('click', () => renderDashboard(user));
+	document.querySelector('#logout-button').addEventListener('click', () => {
+		clearSession();
+		renderLogin();
+	});
+	renderStudentList();
 }
 
 seedUsers();
+seedStudents();
 
 const savedSession = getSession();
 if (savedSession) {
