@@ -1,5 +1,8 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('lyceeConnect', {
-  appName: 'LycéeConnect Offline'
+  appName: 'LycéeConnect Offline',
+  database: {
+    getDashboardStats: () => ipcRenderer.invoke('database:get-dashboard-stats')
+  }
 });

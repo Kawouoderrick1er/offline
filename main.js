@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const { closeDatabase, getDashboardStats, initializeDatabase } = require('./database');
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -18,6 +19,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  initializeDatabase(app.getPath('userData'));
+  ipcMain.handle('database:get-dashboard-stats', () => getDashboardStats());
   createWindow();
 
   app.on('activate', () => {
@@ -31,4 +34,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('will-quit', () => {
+  closeDatabase();
 });

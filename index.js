@@ -220,6 +220,7 @@ function renderDashboard(user) {
 				<div>
 					<p class="eyebrow">Tableau de bord</p>
 					<h2>Bienvenue, ${user.id}</h2>
+					<p id="database-status" class="database-status">Initialisation de la base locale...</p>
 				</div>
 				<div class="topbar-actions">
 					<button id="students-button" class="secondary-button" type="button">Élèves</button>
@@ -234,18 +235,18 @@ function renderDashboard(user) {
 			<div class="stat-grid">
 				<article class="stat-card">
 					<span class="stat-label">Élèves</span>
-					<strong>${students.length}</strong>
+					<strong id="students-stat">${students.length}</strong>
 					<small>Inscrits localement</small>
 				</article>
 				<article class="stat-card">
 					<span class="stat-label">Absences</span>
-					<strong>${absences.length}</strong>
-					<small>${unjustifiedAbsences} non justifiée${unjustifiedAbsences > 1 ? 's' : ''}</small>
+					<strong id="absences-stat">${absences.length}</strong>
+					<small id="unjustified-stat">${unjustifiedAbsences} non justifiée${unjustifiedAbsences > 1 ? 's' : ''}</small>
 				</article>
 				<article class="stat-card">
 					<span class="stat-label">Notes</span>
-					<strong>${average.toFixed(1)}/20</strong>
-					<small>${grades.length} note${grades.length > 1 ? 's' : ''} enregistrée${grades.length > 1 ? 's' : ''}</small>
+					<strong id="grades-stat">${average.toFixed(1)}/20</strong>
+					<small id="grades-count">${grades.length} note${grades.length > 1 ? 's' : ''} enregistrée${grades.length > 1 ? 's' : ''}</small>
 				</article>
 			</div>
 
@@ -276,6 +277,18 @@ function renderDashboard(user) {
 	document.querySelector('#grades-button').addEventListener('click', () => renderGrades(user));
 	document.querySelector('#absences-button').addEventListener('click', () => renderAbsences(user));
 	document.querySelector('#schedule-button').addEventListener('click', () => renderSchedule(user));
+	if (window.lyceeConnect?.database) {
+		window.lyceeConnect.database.getDashboardStats().then((stats) => {
+			document.querySelector('#database-status').textContent = 'SQLite locale active';
+			document.querySelector('#students-stat').textContent = stats.students;
+			document.querySelector('#absences-stat').textContent = stats.absences;
+			document.querySelector('#unjustified-stat').textContent = `${stats.unjustifiedAbsences} non justifiée${stats.unjustifiedAbsences > 1 ? 's' : ''}`;
+			document.querySelector('#grades-stat').textContent = `${Number(stats.average).toFixed(1)}/20`;
+			document.querySelector('#grades-count').textContent = `${stats.grades} note${stats.grades > 1 ? 's' : ''} enregistrée${stats.grades > 1 ? 's' : ''}`;
+		}).catch(() => {
+			document.querySelector('#database-status').textContent = 'Mode local navigateur';
+		});
+	}
 }
 
 function renderStudents(user) {
