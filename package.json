@@ -1,0 +1,13 @@
+{
+  "name": "lyceeconnect-offline",
+  "version": "0.1.0",
+  "description": "Application desktop de gestion scolaire offline-first",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^38.1.0"
+  }
+}
