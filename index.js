@@ -3,6 +3,7 @@ const USERS_KEY = 'lyceeConnectUsers';
 const SESSION_KEY = 'lyceeConnectSession';
 const STUDENTS_KEY = 'lyceeConnectStudents';
 const CLASSES_KEY = 'lyceeConnectClasses';
+const GRADES_KEY = 'lyceeConnectGrades';
 
 function seedUsers() {
 	const existingUsers = JSON.parse(localStorage.getItem(USERS_KEY) || 'null');
@@ -84,6 +85,27 @@ function saveClasses(classes) {
 	localStorage.setItem(CLASSES_KEY, JSON.stringify(classes));
 }
 
+function seedGrades() {
+	const existingGrades = JSON.parse(localStorage.getItem(GRADES_KEY) || 'null');
+	if (Array.isArray(existingGrades)) {
+		return;
+	}
+
+	localStorage.setItem(GRADES_KEY, JSON.stringify([
+		{ id: '1', studentId: '1', subject: 'Mathématiques', value: 15, date: '2026-09-01' },
+		{ id: '2', studentId: '2', subject: 'Français', value: 13, date: '2026-09-02' },
+		{ id: '3', studentId: '3', subject: 'Histoire', value: 16, date: '2026-09-03' }
+	]));
+}
+
+function getGrades() {
+	return JSON.parse(localStorage.getItem(GRADES_KEY) || '[]');
+}
+
+function saveGrades(grades) {
+	localStorage.setItem(GRADES_KEY, JSON.stringify(grades));
+}
+
 function escapeHtml(value) {
 	return String(value).replace(/[&<>'"]/g, (character) => ({
 		'&': '&amp;',
@@ -154,6 +176,7 @@ function renderDashboard(user) {
 				<div class="topbar-actions">
 					<button id="students-button" class="secondary-button" type="button">Élèves</button>
 					<button id="classes-button" class="secondary-button" type="button">Classes</button>
+					<button id="grades-button" class="secondary-button" type="button">Notes</button>
 					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
 				</div>
 			</header>
@@ -200,6 +223,7 @@ function renderDashboard(user) {
 	});
 	document.querySelector('#students-button').addEventListener('click', () => renderStudents(user));
 	document.querySelector('#classes-button').addEventListener('click', () => renderClasses(user));
+	document.querySelector('#grades-button').addEventListener('click', () => renderGrades(user));
 }
 
 function renderStudents(user) {
@@ -354,9 +378,99 @@ function renderClasses(user) {
 	renderClassList();
 }
 
+function renderGrades(user) {
+	const students = getStudents();
+	app.innerHTML = `
+		<section class="dashboard-shell">
+			<header class="topbar">
+				<div>
+					<p class="eyebrow">Suivi pédagogique</p>
+					<h2>Notes</h2>
+				</div>
+				<div class="topbar-actions">
+					<button id="back-button" class="secondary-button" type="button">Tableau de bord</button>
+					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
+				</div>
+			</header>
+
+			<section class="panel grades-panel">
+				<div class="section-heading">
+					<div>
+						<h3>Carnet de notes</h3>
+						<p id="grade-summary"></p>
+					</div>
+				</div>
+				<form id="grade-form" class="grade-form">
+					<select id="grade-student" aria-label="Élève" required>
+						<option value="">Choisir un élève</option>
+						${students.map((student) => `<option value="${escapeHtml(student.id)}">${escapeHtml(student.name)}</option>`).join('')}
+					</select>
+					<input id="grade-subject" type="text" placeholder="Matière" aria-label="Matière" required>
+					<input id="grade-value" type="number" min="0" max="20" step="0.5" placeholder="Note / 20" aria-label="Note sur 20" required>
+					<button type="submit">Ajouter la note <span aria-hidden="true">+</span></button>
+				</form>
+				<p id="grade-message" class="form-message" role="status"></p>
+				<div id="grade-list" class="grade-list"></div>
+			</section>
+		</section>
+	`;
+
+	const renderGradeList = () => {
+		const currentStudents = getStudents();
+		const currentGrades = getGrades();
+		const list = document.querySelector('#grade-list');
+		const average = currentGrades.length ? currentGrades.reduce((total, grade) => total + Number(grade.value), 0) / currentGrades.length : 0;
+		document.querySelector('#grade-summary').textContent = `${currentGrades.length} note${currentGrades.length > 1 ? 's' : ''} enregistrée${currentGrades.length > 1 ? 's' : ''} · moyenne générale ${average.toFixed(1)}/20`;
+		list.innerHTML = currentGrades.length ? currentGrades.map((grade) => {
+			const student = currentStudents.find((entry) => entry.id === grade.studentId);
+			return `
+				<article class="grade-row">
+					<div><strong>${escapeHtml(student ? student.name : 'Élève supprimé')}</strong><span>${escapeHtml(grade.subject)} · ${escapeHtml(grade.date)}</span></div>
+					<div class="grade-row-actions"><strong class="grade-value">${Number(grade.value).toFixed(1)}/20</strong><button class="delete-grade" data-id="${escapeHtml(grade.id)}" type="button" aria-label="Supprimer cette note">Supprimer</button></div>
+				</article>
+			`;
+		}).join('') : '<p class="empty-state">Aucune note enregistrée.</p>';
+		list.querySelectorAll('.delete-grade').forEach((button) => {
+			button.addEventListener('click', () => {
+				saveGrades(getGrades().filter((grade) => grade.id !== button.dataset.id));
+				renderGradeList();
+			});
+		});
+	};
+
+	document.querySelector('#grade-form').addEventListener('submit', (event) => {
+		event.preventDefault();
+		const value = Number(document.querySelector('#grade-value').value);
+		if (value < 0 || value > 20) {
+			document.querySelector('#grade-message').textContent = 'La note doit être comprise entre 0 et 20.';
+			return;
+		}
+		const grades = getGrades();
+		grades.push({
+			id: crypto.randomUUID(),
+			studentId: document.querySelector('#grade-student').value,
+			subject: document.querySelector('#grade-subject').value.trim(),
+			value,
+			date: new Date().toISOString().slice(0, 10)
+		});
+		saveGrades(grades);
+		event.target.reset();
+		document.querySelector('#grade-message').textContent = 'Note ajoutée localement.';
+		renderGradeList();
+	});
+
+	document.querySelector('#back-button').addEventListener('click', () => renderDashboard(user));
+	document.querySelector('#logout-button').addEventListener('click', () => {
+		clearSession();
+		renderLogin();
+	});
+	renderGradeList();
+}
+
 seedUsers();
 seedStudents();
 seedClasses();
+seedGrades();
 
 const savedSession = getSession();
 if (savedSession) {
