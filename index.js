@@ -9,17 +9,19 @@ const SCHEDULE_KEY = 'lyceeConnectSchedule';
 
 function seedUsers() {
 	const existingUsers = JSON.parse(localStorage.getItem(USERS_KEY) || 'null');
-	if (existingUsers && Array.isArray(existingUsers) && existingUsers.length) {
-		return;
-	}
-
 	const defaultUsers = [
 		{ id: 'admin', password: 'admin123', role: 'directeur' },
 		{ id: 'secretaire', password: 'secret123', role: 'secrétariat' },
-		{ id: 'prof', password: 'prof123', role: 'enseignant' }
+		{ id: 'prof', password: 'prof123', role: 'enseignant' },
+		{ id: 'eleve1', password: 'eleve123', role: 'élève', studentId: '1' }
 	];
-
-	localStorage.setItem(USERS_KEY, JSON.stringify(defaultUsers));
+	const users = Array.isArray(existingUsers) ? existingUsers : [];
+	defaultUsers.forEach((defaultUser) => {
+		if (!users.some((user) => user.id === defaultUser.id)) {
+			users.push(defaultUser);
+		}
+	});
+	localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
 function getUsers() {
@@ -209,6 +211,10 @@ function renderLogin() {
 }
 
 function renderDashboard(user) {
+	if (user.role === 'élève') {
+		renderStudentDashboard(user);
+		return;
+	}
 	const students = getStudents();
 	const grades = getGrades();
 	const absences = getAbsences();
@@ -289,6 +295,43 @@ function renderDashboard(user) {
 			document.querySelector('#database-status').textContent = 'Mode local navigateur';
 		});
 	}
+}
+
+function renderStudentDashboard(user) {
+	const student = getStudents().find((entry) => entry.id === user.studentId);
+	const grades = getGrades().filter((grade) => grade.studentId === user.studentId);
+	const absences = getAbsences().filter((absence) => absence.studentId === user.studentId);
+	const schedule = getSchedule().filter((slot) => slot.className === student?.className);
+	const average = grades.length ? grades.reduce((total, grade) => total + Number(grade.value), 0) / grades.length : 0;
+
+	app.innerHTML = `
+		<section class="dashboard-shell student-dashboard">
+			<header class="topbar">
+				<div>
+					<p class="eyebrow">Espace personnel</p>
+					<h2>Bonjour, ${escapeHtml(student?.name || user.id)}</h2>
+					<p class="database-status">Compte élève · données hors ligne</p>
+				</div>
+				<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
+			</header>
+
+			<div class="stat-grid">
+				<article class="stat-card"><span class="stat-label">Classe</span><strong class="student-stat-text">${escapeHtml(student?.className || 'Non affectée')}</strong><small>${escapeHtml(student?.status || 'Profil élève')}</small></article>
+				<article class="stat-card"><span class="stat-label">Moyenne</span><strong>${average.toFixed(1)}/20</strong><small>${grades.length} note${grades.length > 1 ? 's' : ''}</small></article>
+				<article class="stat-card"><span class="stat-label">Absences</span><strong>${absences.length}</strong><small>${absences.filter((absence) => !absence.justified).length} non justifiée${absences.filter((absence) => !absence.justified).length > 1 ? 's' : ''}</small></article>
+			</div>
+
+			<div class="student-content-grid">
+				<section class="panel"><h3>Mes notes</h3><div class="student-detail-list">${grades.length ? grades.map((grade) => `<div><strong>${escapeHtml(grade.subject)}</strong><span>${Number(grade.value).toFixed(1)}/20 · ${escapeHtml(grade.date)}</span></div>`).join('') : '<p>Aucune note disponible.</p>'}</div></section>
+				<section class="panel"><h3>Mon emploi du temps</h3><div class="student-detail-list">${schedule.length ? schedule.map((slot) => `<div><strong>${escapeHtml(slot.day)} · ${escapeHtml(slot.time)}</strong><span>${escapeHtml(slot.subject)}</span></div>`).join('') : '<p>Aucun cours disponible.</p>'}</div></section>
+			</div>
+		</section>
+	`;
+
+	document.querySelector('#logout-button').addEventListener('click', () => {
+		clearSession();
+		renderLogin();
+	});
 }
 
 function renderStudents(user) {

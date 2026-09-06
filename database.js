@@ -51,13 +51,17 @@ function initializeDatabase(userDataPath) {
 			class_name TEXT NOT NULL
 		);
 	`);
+	const userColumns = database.prepare('PRAGMA table_info(users)').all();
+	if (!userColumns.some((column) => column.name === 'student_id')) {
+		database.exec('ALTER TABLE users ADD COLUMN student_id TEXT REFERENCES students(id)');
+	}
 
 	seedDatabase();
 	return database;
 }
 
 function seedDatabase() {
-	const insertUser = database.prepare('INSERT OR IGNORE INTO users (id, password, role) VALUES (?, ?, ?)');
+	const insertUser = database.prepare('INSERT OR IGNORE INTO users (id, password, role, student_id) VALUES (?, ?, ?, ?)');
 	const insertStudent = database.prepare('INSERT OR IGNORE INTO students (id, name, class_name, status) VALUES (?, ?, ?, ?)');
 	const insertClass = database.prepare('INSERT OR IGNORE INTO classes (id, name, level) VALUES (?, ?, ?)');
 	const insertGrade = database.prepare('INSERT OR IGNORE INTO grades (id, student_id, subject, value, date) VALUES (?, ?, ?, ?, ?)');
@@ -65,12 +69,13 @@ function seedDatabase() {
 	const insertSchedule = database.prepare('INSERT OR IGNORE INTO schedule (id, day, time, subject, class_name) VALUES (?, ?, ?, ?, ?)');
 
 	database.transaction(() => {
-		insertUser.run('admin', 'admin123', 'directeur');
-		insertUser.run('secretaire', 'secret123', 'secrétariat');
-		insertUser.run('prof', 'prof123', 'enseignant');
 		insertStudent.run('1', 'Amina Diallo', 'Terminale A', 'Inscrite');
 		insertStudent.run('2', 'Lucas Martin', 'Première C', 'Inscrit');
 		insertStudent.run('3', 'Mariam Koné', 'Seconde B', 'Inscrite');
+		insertUser.run('admin', 'admin123', 'directeur', null);
+		insertUser.run('secretaire', 'secret123', 'secrétariat', null);
+		insertUser.run('prof', 'prof123', 'enseignant', null);
+		insertUser.run('eleve1', 'eleve123', 'élève', '1');
 		insertClass.run('1', 'Seconde B', 'Seconde');
 		insertClass.run('2', 'Première C', 'Première');
 		insertClass.run('3', 'Terminale A', 'Terminale');

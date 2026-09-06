@@ -124,6 +124,13 @@ button span { float: right; font-size: 1.1rem; }
 	font-size: 0.8rem;
 }
 
+.student-stat-text { font-size: clamp(1.35rem, 2.2vw, 2rem) !important; }
+.student-content-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.student-detail-list { display: grid; gap: 0; }
+.student-detail-list > div { display: grid; gap: 5px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.student-detail-list > div:last-child { border-bottom: 0; }
+.student-detail-list span { color: var(--muted); font-size: 0.88rem; }
+
 .panel-grid {
 	display: grid;
 	grid-template-columns: 1.2fr 0.8fr;
@@ -219,6 +226,7 @@ button span { float: right; font-size: 1.1rem; }
 	.login-panel { padding: 56px 28px; }
 	h1 { font-size: clamp(3.2rem, 15vw, 5rem); }
 	.stat-grid, .panel-grid { grid-template-columns: 1fr; }
+	.student-content-grid { grid-template-columns: 1fr; }
 	.topbar { flex-direction: column; align-items: flex-start; }
 	.topbar-actions { flex-wrap: wrap; }
 	.section-heading, .student-form { grid-template-columns: 1fr; display: grid; align-items: stretch; }
