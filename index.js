@@ -209,6 +209,11 @@ function renderLogin() {
 }
 
 function renderDashboard(user) {
+	const students = getStudents();
+	const grades = getGrades();
+	const absences = getAbsences();
+	const average = grades.length ? grades.reduce((total, grade) => total + Number(grade.value), 0) / grades.length : 0;
+	const unjustifiedAbsences = absences.filter((absence) => !absence.justified).length;
 	app.innerHTML = `
 		<section class="dashboard-shell">
 			<header class="topbar">
@@ -229,18 +234,18 @@ function renderDashboard(user) {
 			<div class="stat-grid">
 				<article class="stat-card">
 					<span class="stat-label">Élèves</span>
-					<strong>248</strong>
-					<small>+12 ce mois</small>
+					<strong>${students.length}</strong>
+					<small>Inscrits localement</small>
 				</article>
 				<article class="stat-card">
 					<span class="stat-label">Absences</span>
-					<strong>18</strong>
-					<small>3 non justifiées</small>
+					<strong>${absences.length}</strong>
+					<small>${unjustifiedAbsences} non justifiée${unjustifiedAbsences > 1 ? 's' : ''}</small>
 				</article>
 				<article class="stat-card">
 					<span class="stat-label">Notes</span>
-					<strong>91%</strong>
-					<small>Moyenne générale</small>
+					<strong>${average.toFixed(1)}/20</strong>
+					<small>${grades.length} note${grades.length > 1 ? 's' : ''} enregistrée${grades.length > 1 ? 's' : ''}</small>
 				</article>
 			</div>
 
