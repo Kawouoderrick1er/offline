@@ -4,6 +4,7 @@ const SESSION_KEY = 'lyceeConnectSession';
 const STUDENTS_KEY = 'lyceeConnectStudents';
 const CLASSES_KEY = 'lyceeConnectClasses';
 const GRADES_KEY = 'lyceeConnectGrades';
+const ABSENCES_KEY = 'lyceeConnectAbsences';
 
 function seedUsers() {
 	const existingUsers = JSON.parse(localStorage.getItem(USERS_KEY) || 'null');
@@ -106,6 +107,26 @@ function saveGrades(grades) {
 	localStorage.setItem(GRADES_KEY, JSON.stringify(grades));
 }
 
+function seedAbsences() {
+	const existingAbsences = JSON.parse(localStorage.getItem(ABSENCES_KEY) || 'null');
+	if (Array.isArray(existingAbsences)) {
+		return;
+	}
+
+	localStorage.setItem(ABSENCES_KEY, JSON.stringify([
+		{ id: '1', studentId: '1', date: '2026-09-04', reason: 'Rendez-vous médical', justified: true },
+		{ id: '2', studentId: '2', date: '2026-09-05', reason: 'Non précisée', justified: false }
+	]));
+}
+
+function getAbsences() {
+	return JSON.parse(localStorage.getItem(ABSENCES_KEY) || '[]');
+}
+
+function saveAbsences(absences) {
+	localStorage.setItem(ABSENCES_KEY, JSON.stringify(absences));
+}
+
 function escapeHtml(value) {
 	return String(value).replace(/[&<>'"]/g, (character) => ({
 		'&': '&amp;',
@@ -177,6 +198,7 @@ function renderDashboard(user) {
 					<button id="students-button" class="secondary-button" type="button">Élèves</button>
 					<button id="classes-button" class="secondary-button" type="button">Classes</button>
 					<button id="grades-button" class="secondary-button" type="button">Notes</button>
+					<button id="absences-button" class="secondary-button" type="button">Absences</button>
 					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
 				</div>
 			</header>
@@ -224,6 +246,7 @@ function renderDashboard(user) {
 	document.querySelector('#students-button').addEventListener('click', () => renderStudents(user));
 	document.querySelector('#classes-button').addEventListener('click', () => renderClasses(user));
 	document.querySelector('#grades-button').addEventListener('click', () => renderGrades(user));
+	document.querySelector('#absences-button').addEventListener('click', () => renderAbsences(user));
 }
 
 function renderStudents(user) {
@@ -467,10 +490,101 @@ function renderGrades(user) {
 	renderGradeList();
 }
 
+function renderAbsences(user) {
+	const students = getStudents();
+	app.innerHTML = `
+		<section class="dashboard-shell">
+			<header class="topbar">
+				<div>
+					<p class="eyebrow">Vie scolaire</p>
+					<h2>Absences</h2>
+				</div>
+				<div class="topbar-actions">
+					<button id="back-button" class="secondary-button" type="button">Tableau de bord</button>
+					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
+				</div>
+			</header>
+
+			<section class="panel absences-panel">
+				<div class="section-heading">
+					<div>
+						<h3>Suivi des absences</h3>
+						<p id="absence-summary"></p>
+					</div>
+				</div>
+				<form id="absence-form" class="absence-form">
+					<select id="absence-student" aria-label="Élève absent" required>
+						<option value="">Choisir un élève</option>
+						${students.map((student) => `<option value="${escapeHtml(student.id)}">${escapeHtml(student.name)}</option>`).join('')}
+					</select>
+					<input id="absence-date" type="date" aria-label="Date de l'absence" required>
+					<input id="absence-reason" type="text" placeholder="Motif" aria-label="Motif de l'absence" required>
+					<label class="check-field"><input id="absence-justified" type="checkbox"> Justifiée</label>
+					<button type="submit">Enregistrer <span aria-hidden="true">+</span></button>
+				</form>
+				<p id="absence-message" class="form-message" role="status"></p>
+				<div id="absence-list" class="absence-list"></div>
+			</section>
+		</section>
+	`;
+
+	const renderAbsenceList = () => {
+		const currentStudents = getStudents();
+		const absences = getAbsences();
+		const justifiedCount = absences.filter((absence) => absence.justified).length;
+		document.querySelector('#absence-summary').textContent = `${absences.length} absence${absences.length > 1 ? 's' : ''} · ${justifiedCount} justifiée${justifiedCount > 1 ? 's' : ''} · ${absences.length - justifiedCount} non justifiée${absences.length - justifiedCount > 1 ? 's' : ''}`;
+		document.querySelector('#absence-list').innerHTML = absences.length ? absences.map((absence) => {
+			const student = currentStudents.find((entry) => entry.id === absence.studentId);
+			return `
+				<article class="absence-row">
+					<div><strong>${escapeHtml(student ? student.name : 'Élève supprimé')}</strong><span>${escapeHtml(absence.date)} · ${escapeHtml(absence.reason)}</span></div>
+					<div class="absence-row-actions"><span class="absence-status ${absence.justified ? 'is-justified' : 'is-unjustified'}">${absence.justified ? 'Justifiée' : 'Non justifiée'}</span><button class="delete-absence" data-id="${escapeHtml(absence.id)}" type="button" aria-label="Supprimer cette absence">Supprimer</button></div>
+				</article>
+			`;
+		}).join('') : '<p class="empty-state">Aucune absence enregistrée.</p>';
+		document.querySelectorAll('.delete-absence').forEach((button) => {
+			button.addEventListener('click', () => {
+				saveAbsences(getAbsences().filter((absence) => absence.id !== button.dataset.id));
+				renderAbsenceList();
+			});
+		});
+	};
+
+	document.querySelector('#absence-form').addEventListener('submit', (event) => {
+		event.preventDefault();
+		const absences = getAbsences();
+		const studentId = document.querySelector('#absence-student').value;
+		const date = document.querySelector('#absence-date').value;
+		if (absences.some((absence) => absence.studentId === studentId && absence.date === date)) {
+			document.querySelector('#absence-message').textContent = 'Une absence existe déjà pour cet élève à cette date.';
+			return;
+		}
+		absences.push({
+			id: crypto.randomUUID(),
+			studentId,
+			date,
+			reason: document.querySelector('#absence-reason').value.trim(),
+			justified: document.querySelector('#absence-justified').checked
+		});
+		saveAbsences(absences);
+		event.target.reset();
+		document.querySelector('#absence-message').textContent = 'Absence enregistrée localement.';
+		renderAbsenceList();
+	});
+
+	document.querySelector('#back-button').addEventListener('click', () => renderDashboard(user));
+	document.querySelector('#logout-button').addEventListener('click', () => {
+		clearSession();
+		renderLogin();
+	});
+	renderAbsenceList();
+}
+
 seedUsers();
 seedStudents();
 seedClasses();
 seedGrades();
+seedAbsences();
 
 const savedSession = getSession();
 if (savedSession) {

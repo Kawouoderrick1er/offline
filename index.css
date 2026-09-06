@@ -181,6 +181,21 @@ button span { float: right; font-size: 1.1rem; }
 .grade-value { color: var(--green); }
 .delete-grade { width: auto; margin: 0; padding: 8px 12px; color: #a0443f; background: transparent; border: 1px solid #d9aaa5; font-size: 0.68rem; }
 .delete-grade:hover { color: #fff; background: #a0443f; }
+.absences-panel { max-width: 1100px; }
+.absence-form { display: grid; grid-template-columns: 1fr 0.75fr 1fr auto auto; gap: 12px; max-width: none; margin-bottom: 4px; }
+.absence-form input[type="text"], .absence-form input[type="date"], .absence-form select { width: 100%; margin: 0; padding: 14px; border: 1px solid var(--line); outline: 0; color: var(--ink); background: #fffdf8; font: 0.95rem Georgia, serif; }
+.absence-form button { width: auto; margin: 0; white-space: nowrap; }
+.check-field { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 8px; color: var(--muted); font: 0.82rem/1.2 Arial, sans-serif; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.check-field input { width: auto; margin: 0; }
+.absence-list { margin-top: 18px; border-top: 1px solid var(--line); }
+.absence-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.absence-row > div:first-child { display: grid; gap: 5px; }
+.absence-row span { color: var(--muted); font: 0.82rem/1.2 Arial, sans-serif; }
+.absence-row-actions { display: flex; align-items: center; gap: 16px; }
+.absence-status.is-justified { color: var(--green); }
+.absence-status.is-unjustified { color: #a0443f; }
+.delete-absence { width: auto; margin: 0; padding: 8px 12px; color: #a0443f; background: transparent; border: 1px solid #d9aaa5; font-size: 0.68rem; }
+.delete-absence:hover { color: #fff; background: #a0443f; }
 
 @media (max-width: 800px) {
 	.login-shell { grid-template-columns: 1fr; }
@@ -200,4 +215,8 @@ button span { float: right; font-size: 1.1rem; }
 	.grade-form { grid-template-columns: 1fr; }
 	.grade-form button { width: 100%; }
 	.grade-row { align-items: flex-start; flex-direction: column; }
+	.absence-form { grid-template-columns: 1fr; }
+	.absence-form button { width: 100%; }
+	.check-field { padding: 10px 0; }
+	.absence-row { align-items: flex-start; flex-direction: column; }
 }
