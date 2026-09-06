@@ -158,6 +158,17 @@ button span { float: right; font-size: 1.1rem; }
 .delete-student { width: auto; margin: 0; padding: 8px 12px; color: #a0443f; background: transparent; border: 1px solid #d9aaa5; font-size: 0.68rem; }
 .delete-student:hover { color: #fff; background: #a0443f; }
 .empty-state { padding: 18px 0; }
+.classes-panel { max-width: 1100px; }
+.class-form { display: grid; grid-template-columns: 1fr 0.7fr auto; gap: 12px; max-width: none; margin-bottom: 4px; }
+.class-form input { margin: 0; padding: 14px; border: 1px solid var(--line); background: #fffdf8; }
+.class-form button { width: auto; margin: 0; white-space: nowrap; }
+.class-list { margin-top: 18px; border-top: 1px solid var(--line); }
+.class-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.class-row > div:first-child { display: grid; gap: 5px; }
+.class-row span { color: var(--muted); font: 0.82rem/1.2 Arial, sans-serif; }
+.class-row-actions { display: flex; align-items: center; gap: 16px; }
+.delete-class { width: auto; margin: 0; padding: 8px 12px; color: #a0443f; background: transparent; border: 1px solid #d9aaa5; font-size: 0.68rem; }
+.delete-class:hover { color: #fff; background: #a0443f; }
 
 @media (max-width: 800px) {
 	.login-shell { grid-template-columns: 1fr; }
@@ -171,4 +182,7 @@ button span { float: right; font-size: 1.1rem; }
 	.search-input { width: 100%; }
 	.student-form button { width: 100%; }
 	.student-row { align-items: flex-start; flex-direction: column; }
+	.class-form { grid-template-columns: 1fr; }
+	.class-form button { width: 100%; }
+	.class-row { align-items: flex-start; flex-direction: column; }
 }

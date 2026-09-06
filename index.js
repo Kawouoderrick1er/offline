@@ -2,6 +2,7 @@ const app = document.querySelector('#app');
 const USERS_KEY = 'lyceeConnectUsers';
 const SESSION_KEY = 'lyceeConnectSession';
 const STUDENTS_KEY = 'lyceeConnectStudents';
+const CLASSES_KEY = 'lyceeConnectClasses';
 
 function seedUsers() {
 	const existingUsers = JSON.parse(localStorage.getItem(USERS_KEY) || 'null');
@@ -60,6 +61,27 @@ function getStudents() {
 
 function saveStudents(students) {
 	localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
+}
+
+function seedClasses() {
+	const existingClasses = JSON.parse(localStorage.getItem(CLASSES_KEY) || 'null');
+	if (Array.isArray(existingClasses)) {
+		return;
+	}
+
+	localStorage.setItem(CLASSES_KEY, JSON.stringify([
+		{ id: '1', name: 'Seconde B', level: 'Seconde' },
+		{ id: '2', name: 'Première C', level: 'Première' },
+		{ id: '3', name: 'Terminale A', level: 'Terminale' }
+	]));
+}
+
+function getClasses() {
+	return JSON.parse(localStorage.getItem(CLASSES_KEY) || '[]');
+}
+
+function saveClasses(classes) {
+	localStorage.setItem(CLASSES_KEY, JSON.stringify(classes));
 }
 
 function escapeHtml(value) {
@@ -131,6 +153,7 @@ function renderDashboard(user) {
 				</div>
 				<div class="topbar-actions">
 					<button id="students-button" class="secondary-button" type="button">Élèves</button>
+					<button id="classes-button" class="secondary-button" type="button">Classes</button>
 					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
 				</div>
 			</header>
@@ -176,6 +199,7 @@ function renderDashboard(user) {
 		renderLogin();
 	});
 	document.querySelector('#students-button').addEventListener('click', () => renderStudents(user));
+	document.querySelector('#classes-button').addEventListener('click', () => renderClasses(user));
 }
 
 function renderStudents(user) {
@@ -254,8 +278,85 @@ function renderStudents(user) {
 	renderStudentList();
 }
 
+function renderClasses(user) {
+	app.innerHTML = `
+		<section class="dashboard-shell">
+			<header class="topbar">
+				<div>
+					<p class="eyebrow">Organisation pédagogique</p>
+					<h2>Classes</h2>
+				</div>
+				<div class="topbar-actions">
+					<button id="back-button" class="secondary-button" type="button">Tableau de bord</button>
+					<button id="logout-button" class="logout-button" type="button">Déconnexion</button>
+				</div>
+			</header>
+
+			<section class="panel classes-panel">
+				<div class="section-heading">
+					<div>
+						<h3>Répertoire des classes</h3>
+						<p>Les effectifs sont calculés depuis les élèves enregistrés.</p>
+					</div>
+				</div>
+				<form id="class-form" class="class-form">
+					<input id="class-name" type="text" placeholder="Nom de la classe" aria-label="Nom de la classe" required>
+					<input id="class-level" type="text" placeholder="Niveau" aria-label="Niveau" required>
+					<button type="submit">Ajouter la classe <span aria-hidden="true">+</span></button>
+				</form>
+				<p id="class-message" class="form-message" role="status"></p>
+				<div id="class-list" class="class-list"></div>
+			</section>
+		</section>
+	`;
+
+	const renderClassList = () => {
+		const students = getStudents();
+		const list = document.querySelector('#class-list');
+		list.innerHTML = getClasses().length ? getClasses().map((schoolClass) => {
+			const studentCount = students.filter((student) => student.className === schoolClass.name).length;
+			return `
+				<article class="class-row">
+					<div><strong>${escapeHtml(schoolClass.name)}</strong><span>${escapeHtml(schoolClass.level)}</span></div>
+					<div class="class-row-actions"><span>${studentCount} élève${studentCount > 1 ? 's' : ''}</span><button class="delete-class" data-id="${escapeHtml(schoolClass.id)}" type="button" aria-label="Supprimer ${escapeHtml(schoolClass.name)}">Supprimer</button></div>
+				</article>
+			`;
+		}).join('') : '<p class="empty-state">Aucune classe enregistrée.</p>';
+		list.querySelectorAll('.delete-class').forEach((button) => {
+			button.addEventListener('click', () => {
+				saveClasses(getClasses().filter((schoolClass) => schoolClass.id !== button.dataset.id));
+				renderClassList();
+			});
+		});
+	};
+
+	document.querySelector('#class-form').addEventListener('submit', (event) => {
+		event.preventDefault();
+		const nameInput = document.querySelector('#class-name');
+		const levelInput = document.querySelector('#class-level');
+		const classes = getClasses();
+		if (classes.some((schoolClass) => schoolClass.name.toLowerCase() === nameInput.value.trim().toLowerCase())) {
+			document.querySelector('#class-message').textContent = 'Cette classe existe déjà.';
+			return;
+		}
+		classes.push({ id: crypto.randomUUID(), name: nameInput.value.trim(), level: levelInput.value.trim() });
+		saveClasses(classes);
+		event.target.reset();
+		document.querySelector('#class-message').textContent = 'Classe ajoutée localement.';
+		renderClassList();
+	});
+
+	document.querySelector('#back-button').addEventListener('click', () => renderDashboard(user));
+	document.querySelector('#logout-button').addEventListener('click', () => {
+		clearSession();
+		renderLogin();
+	});
+	renderClassList();
+}
+
 seedUsers();
 seedStudents();
+seedClasses();
 
 const savedSession = getSession();
 if (savedSession) {
