@@ -2,15 +2,39 @@
   "name": "lyceeconnect-offline",
   "version": "0.1.0",
   "description": "Application desktop de gestion scolaire offline-first",
+  "author": "LycéeConnect",
+  "desktopName": "lyceeconnect-offline",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron ."
+    "dev": "electron .",
+    "package": "electron-builder --dir",
+    "dist": "electron-builder --linux AppImage"
   },
   "devDependencies": {
-    "electron": "^38.1.0"
+    "electron": "^38.1.0",
+    "electron-builder": "^26.15.3"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3"
+  },
+  "build": {
+    "appId": "com.lyceeconnect.offline",
+    "productName": "LycéeConnect Offline",
+    "artifactName": "LyceeConnect-Offline-${version}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "**/*",
+      "!release{,/**/*}",
+      "!assets/icon.svg"
+    ],
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Education",
+      "icon": "assets/icons",
+      "syncDesktopName": true
+    }
   }
 }

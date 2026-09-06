@@ -165,6 +165,7 @@ function renderLogin() {
 	app.innerHTML = `
 		<section class="login-shell" aria-labelledby="login-title">
 			<div class="brand-panel">
+				<div class="brand-mark"><img src="assets/icon.svg" alt="Logo LycéeConnect"></div>
 				<p class="eyebrow">Gestion scolaire · Offline-first</p>
 				<h1>LycéeConnect<br><span>Offline</span></h1>
 				<p class="brand-copy">La gestion pédagogique continue, même lorsque la connexion s’interrompt.</p>
